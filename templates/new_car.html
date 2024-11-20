@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <h2>Add New Car</h2>
+    <form method="POST" action="{{ url_for('new_car') }}" class="auth-form">
+        <div class="form-group">
+            <label for="name">Car Name:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        <div class="form-group">
+            <label for="price">Price (₹):</label>
+            <input type="number" id="price" name="price" required>
+        </div>
+        <div class="form-group">
+            <label for="image_url">Image URL:</label>
+            <input type="url" id="image_url" name="image_url" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Car</button>
+    </form>
+</div>
+{% endblock %}

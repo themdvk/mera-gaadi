@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <h2>Edit Car</h2>
+    <form method="POST" action="{{ url_for('edit_car', car_id=car.id) }}" class="auth-form">
+        <div class="form-group">
+            <label for="name">Car Name:</label>
+            <input type="text" id="name" name="name" value="{{ car.name }}" required>
+        </div>
+        <div class="form-group">
+            <label for="price">Price (₹):</label>
+            <input type="number" id="price" name="price" value="{{ car.price }}" required>
+        </div>
+        <div class="form-group">
+            <label for="image_url">Image URL:</label>
+            <input type="url" id="image_url" name="image_url" value="{{ car.image_url }}" required>
+        </div>
+        <div class="preview-image">
+            <p>Current Image:</p>
+            <img src="{{ car.image_url }}" alt="{{ car.name }}" style="max-width: 300px; margin-top: 10px;">
+        </div>
+        <button type="submit" class="btn btn-primary">Update Car</button>
+        <a href="{{ url_for('view_car', car_id=car.id) }}" class="btn btn-secondary" style="margin-top: 10px;">Cancel</a>
+    </form>
+</div>
+
+<style>
+.preview-image {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.preview-image p {
+    margin-bottom: 0.5rem;
+    color: #666;
+}
+
+.preview-image img {
+    border-radius: 4px;
+}
+</style>
+{% endblock %}
