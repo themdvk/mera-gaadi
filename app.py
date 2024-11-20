@@ -5,6 +5,11 @@ import os
 from functools import wraps
 import hashlib
 import uuid
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -12,19 +17,43 @@ app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-secret-key-here')  # Change this in production
 
 # Initialize Supabase client
+supabase: Client = None
+
+def init_supabase():
+    global supabase
+    try:
+        supabase_url = os.getenv('SUPABASE_URL')
+        supabase_key = os.getenv('SUPABASE_KEY')
+        
+        logger.info(f"Attempting to initialize Supabase with URL: {supabase_url}")
+        
+        if not supabase_url or not supabase_key:
+            logger.error("Supabase URL or Key not found in environment variables")
+            raise ValueError("Supabase URL or Key not found in environment variables")
+        
+        supabase = create_client(supabase_url, supabase_key)
+        logger.info("Supabase client initialized successfully")
+        return supabase
+    except Exception as e:
+        logger.error(f"Error initializing Supabase client: {str(e)}")
+        raise
+
+# Initialize Supabase client
 try:
-    supabase_url = os.getenv('SUPABASE_URL')
-    supabase_key = os.getenv('SUPABASE_KEY')
-    
-    if not supabase_url or not supabase_key:
-        raise ValueError("Supabase URL or Key not found in environment variables")
-    
-    print(f"Initializing Supabase client with URL: {supabase_url}")
-    supabase: Client = create_client(supabase_url, supabase_key)
-    print("Supabase client initialized successfully")
+    supabase = init_supabase()
 except Exception as e:
-    print(f"Error initializing Supabase client: {str(e)}")
-    raise
+    logger.error(f"Failed to initialize Supabase: {str(e)}")
+    supabase = None
+
+@app.errorhandler(500)
+def internal_error(error):
+    logger.error(f"Internal Server Error: {str(error)}")
+    return jsonify({"error": "Internal Server Error", "message": str(error)}), 500
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    logger.error(f"Unhandled Exception: {str(e)}")
+    return jsonify({"error": "Internal Server Error", "message": str(e)}), 500
 
 def login_required(f):
     @wraps(f)
@@ -70,7 +99,7 @@ def login():
                 return render_template('login.html')
                 
         except Exception as e:
-            print(f"Login error: {str(e)}")
+            logger.error(f"Login error: {str(e)}")
             flash('Login failed. Please try again.', 'error')
             return render_template('login.html')
             
@@ -140,13 +169,13 @@ def signup():
                 return render_template('signup.html')
                 
         except Exception as e:
-            print(f"Signup error (detailed):")
-            print(f"Error type: {type(e).__name__}")
-            print(f"Error message: {str(e)}")
+            logger.error(f"Signup error (detailed):")
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Error message: {str(e)}")
             if hasattr(e, 'code'):
-                print(f"Error code: {e.code}")
+                logger.error(f"Error code: {e.code}")
             if hasattr(e, 'response'):
-                print(f"Error response: {e.response}")
+                logger.error(f"Error response: {e.response}")
             flash('Error during signup. Please try again.', 'error')
             return render_template('signup.html')
             
@@ -163,6 +192,7 @@ def dashboard():
         cars = supabase.table('cars').select("*").eq('user_id', user_id).execute()
         return render_template('dashboard.html', cars=cars.data)
     except Exception as e:
+        logger.error(f"Error loading dashboard: {str(e)}")
         flash(f'Error loading dashboard: {str(e)}', 'error')
         return redirect(url_for('login'))
 
@@ -202,7 +232,7 @@ def new_car():
             flash('Car added successfully!', 'success')
             return redirect(url_for('dashboard'))
         except Exception as e:
-            print(f"Error creating car: {str(e)}")  # Debug print
+            logger.error(f"Error creating car: {str(e)}")  # Debug print
             flash(f'Error adding car: {str(e)}', 'error')
             return render_template('new_car.html')
             
@@ -231,7 +261,7 @@ def view_car(car_id):
             
         return render_template('view_car.html', car=car.data)
     except Exception as e:
-        print(f"Error viewing car: {str(e)}")
+        logger.error(f"Error viewing car: {str(e)}")
         flash('Error loading car details.', 'error')
         return redirect(url_for('dashboard'))
 
